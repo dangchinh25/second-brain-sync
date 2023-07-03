@@ -14,6 +14,11 @@ export const getRepo = async (
                 repository(owner: $owner, name: $repoName) {
                     createdAt
                     id
+                    defaultBranchRef {
+                        target {
+                            oid
+                        }
+                    }
                 }
             }
         `
@@ -27,21 +32,23 @@ export const getRepo = async (
 export const createBranch = async (
     params: CreateBranchParams
 ): Promise<Either<Error, CreateBranchResponse>> => {
+    const branchRef = `refs/heads/${ params.branchName }`;
+
     const response: CreateBranchResponse = await octokitClient.graphql( {
         query: `
-            mutation createBranchFromRef($branchName: String!, $repositoryId: ID!, $commitHash: GitObjectID!) {
+            mutation createBranchFromRef($branchRef: String!, $repositoryId: ID!, $oid: GitObjectID!) {
                 createRef(input: {
-                    name: $branchName
-                    oid: $commitHash
+                    name: $branchRef
+                    oid: $oid
                     repositoryId: $repositoryId
                 }) {
                     clientMutationId
                 }
             }
         `
-        , branchName: params.branchName
+        , branchRef: branchRef
         , repositoryId: params.repositoryId
-        , commitHash: params.commitHash
+        , oid: params.oid
     } );
 
     return success( response );

@@ -2,6 +2,11 @@ export interface GetRepoResponse {
     repository: {
         id: string;
         createdAt: string;
+        defaultBranchRef: {
+            target: {
+                oid: string;
+            };
+        };
     };
 }
 
@@ -13,7 +18,7 @@ export interface GetRepoParams {
 export interface CreateBranchParams {
     branchName: string;
     repositoryId: string;
-    commitHash: string;
+    oid: string;
 }
 
 export interface CreateBranchResponse {
