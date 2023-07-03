@@ -1,82 +1,81 @@
-import fs from "fs";
-import path from "path";
-import { Octokit } from "@octokit/core";
+import fs from 'fs';
+import path from 'path';
+import { Octokit } from '@octokit/core';
 
-function convertToURLStyleString(str: string): string {
-  const lowerCaseStr = str.toLowerCase();
-  const strParts = lowerCaseStr.split(" ");
+const convertToURLStyleString = ( str: string ): string => {
+    const lowerCaseStr = str.toLowerCase();
+    const strParts = lowerCaseStr.split( ' ' );
 
-  return strParts.join("-");
-}
+    return strParts.join( '-' );
+};
 
-const octokit = new Octokit({
-  auth: "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",
-});
+const octokit = new Octokit( { auth: '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' } );
 
-function getAllFiles(
-  folderPath: string,
-  folderName: string
-): Map<string, string[]> {
-  const directoriesFilesMap: Map<string, string[]> = new Map();
-  function traverseDirectory(directory: string) {
-    const entries = fs.readdirSync(directory, { withFileTypes: true });
+const getAllFiles = (
+    folderPath: string
+    , folderName: string
+): Map<string, string[]> => {
+    const directoriesFilesMap: Map<string, string[]> = new Map();
 
-    for (const entry of entries) {
-      const entryPath = path.join(directory, entry.name);
+    const traverseDirectory = ( directory: string ) => {
+        const entries = fs.readdirSync( directory, { withFileTypes: true } );
 
-      if (entry.isFile()) {
-        const [, fileExtension] = entry.name.split(".");
+        for ( const entry of entries ) {
+            const entryPath = path.join( directory, entry.name );
 
-        if (fileExtension === "md") {
-          const directoryPath = path.dirname(entryPath);
-          const directoryPathParts = directoryPath.split("/");
-          let directoryName = directoryPathParts[directoryPathParts.length - 1];
+            if ( entry.isFile() ) {
+                const [ , fileExtension ] = entry.name.split( '.' );
 
-          if (directoryName === folderName) {
-            const entryPathParts = entryPath.split("/");
-            const [entryFilename] =
-              entryPathParts[entryPathParts.length - 1].split(".");
+                if ( fileExtension === 'md' ) {
+                    const directoryPath = path.dirname( entryPath );
+                    const directoryPathParts = directoryPath.split( '/' );
+                    let directoryName = directoryPathParts[ directoryPathParts.length - 1 ];
 
-            directoryName = entryFilename;
-          }
+                    if ( directoryName === folderName ) {
+                        const entryPathParts = entryPath.split( '/' );
+                        const [ entryFilename ]
+              = entryPathParts[ entryPathParts.length - 1 ].split( '.' );
 
-          directoryName = convertToURLStyleString(directoryName);
+                        directoryName = entryFilename;
+                    }
 
-          if (!directoriesFilesMap.has(directoryName)) {
-            directoriesFilesMap.set(directoryName, []);
-          }
+                    directoryName = convertToURLStyleString( directoryName );
 
-          directoriesFilesMap.get(directoryName)?.push(entryPath);
+                    if ( !directoriesFilesMap.has( directoryName ) ) {
+                        directoriesFilesMap.set( directoryName, [] );
+                    }
+
+                    directoriesFilesMap.get( directoryName )?.push( entryPath );
+                }
+            } else if ( entry.isDirectory() ) {
+                traverseDirectory( entryPath );
+            }
         }
-      } else if (entry.isDirectory()) {
-        traverseDirectory(entryPath);
-      }
-    }
-  }
+    };
 
-  traverseDirectory(folderPath);
-  return directoriesFilesMap;
-}
+    traverseDirectory( folderPath );
+    return directoriesFilesMap;
+};
 
-const folderName = "SecondBrain";
-const folderPath = `/Users/chinhle/Documents/Learning/${folderName}`;
-const filesInFolder = getAllFiles(folderPath, folderName);
+const folderName = 'SecondBrain';
+const folderPath = `/Users/chinhle/Documents/Learning/${ folderName }`;
+const filesInFolder = getAllFiles( folderPath, folderName );
 
-async function getRepo() {
-  const response = await octokit.graphql(`
+const getRepo = async () => {
+    const response = await octokit.graphql( `
 	query {
 		repository(owner: "dangchinh25", name: "second-brain") {
 			createdAt
 			id
 		}
 	}
-  `);
+  ` );
 
-  console.log(response);
-}
+    console.log( response );
+};
 
-async function createBranch() {
-  const response = await octokit.graphql(`
+const createBranch = async () => {
+    const response = await octokit.graphql( `
 		mutation {
 			createRef(input: {
 				name: "refs/heads/test_branch"
@@ -86,15 +85,17 @@ async function createBranch() {
 				clientMutationId
 			}
 		}
-	`);
+	` );
 
-  console.log(response);
-}
+    console.log( response );
+};
 
-// Call getRepo to get Repo Id
-// Fetch the most recent commit of the default branch to get the latest hash
-// Call create branch to create a new branch that is up to date with the default branch
-// Commit?
+/*
+ * Call getRepo to get Repo Id
+ * Fetch the most recent commit of the default branch to get the latest hash
+ * Call create branch to create a new branch that is up to date with the default branch
+ * Commit?
+ */
 
-//getRepo();
+// getRepo();
 createBranch();
