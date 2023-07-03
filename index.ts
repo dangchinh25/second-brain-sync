@@ -1,6 +1,13 @@
 import fs from "fs";
 import path from "path";
 
+function convertToURLStyleString(str: string): string {
+  const lowerCaseStr = str.toLowerCase();
+  const strParts = lowerCaseStr.split(" ");
+
+  return strParts.join("-");
+}
+
 function getAllFiles(
   folderPath: string,
   folderName: string
@@ -27,6 +34,8 @@ function getAllFiles(
 
             directoryName = entryFilename;
           }
+
+          directoryName = convertToURLStyleString(directoryName);
 
           if (!directoriesFilesMap.has(directoryName)) {
             directoriesFilesMap.set(directoryName, []);
