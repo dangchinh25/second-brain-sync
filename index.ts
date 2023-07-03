@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { Octokit } from "@octokit/core";
 
 function convertToURLStyleString(str: string): string {
   const lowerCaseStr = str.toLowerCase();
@@ -7,6 +8,10 @@ function convertToURLStyleString(str: string): string {
 
   return strParts.join("-");
 }
+
+const octokit = new Octokit({
+  auth: "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",
+});
 
 function getAllFiles(
   folderPath: string,
@@ -57,4 +62,39 @@ const folderName = "SecondBrain";
 const folderPath = `/Users/chinhle/Documents/Learning/${folderName}`;
 const filesInFolder = getAllFiles(folderPath, folderName);
 
-console.log(filesInFolder);
+async function getRepo() {
+  const response = await octokit.graphql(`
+	query {
+		repository(owner: "dangchinh25", name: "second-brain") {
+			createdAt
+			id
+		}
+	}
+  `);
+
+  console.log(response);
+}
+
+async function createBranch() {
+  const response = await octokit.graphql(`
+		mutation {
+			createRef(input: {
+				name: "refs/heads/test_branch"
+				oid: "52ad7efdb1471defd91bee68198b0d9be2da2e21"
+				repositoryId: "R_kgDOJ22RMQ"
+			}) {
+				clientMutationId
+			}
+		}
+	`);
+
+  console.log(response);
+}
+
+// Call getRepo to get Repo Id
+// Fetch the most recent commit of the default branch to get the latest hash
+// Call create branch to create a new branch that is up to date with the default branch
+// Commit?
+
+//getRepo();
+createBranch();
