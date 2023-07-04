@@ -7,6 +7,8 @@ import {
     , CreateCommitOnBranchResponse
     , CreatePullRequestParams, CreatePullRequestResponse, GetRepoParams
     , GetRepoResponse
+    , MergePullRequestParams
+    , MergePullRequestResponse
 } from './octokit.types';
 
 export const getRepo = async (
@@ -111,6 +113,9 @@ export const createPullRequest = async (
             mutation ($input: CreatePullRequestInput!) {
                 createPullRequest(input: $input) {
                     clientMutationId
+                    pullRequest {
+                        id
+                    }
                 }
             }
         `
@@ -121,6 +126,23 @@ export const createPullRequest = async (
             , repositoryId: params.repositoryId
             , title: params.title
         }
+    } );
+
+    return success( response );
+};
+
+export const mergePullRequest = async (
+    params: MergePullRequestParams
+): Promise<Either<Error, MergePullRequestResponse>> => {
+    const response: MergePullRequestResponse = await octokitClient.graphql( {
+        query: `
+            mutation ($input: MergePullRequestInput!) {
+                mergePullRequest(input: $input) {
+                    clientMutationId
+                }
+            }
+        `
+        , input: { pullRequestId: params.pullRequestId }
     } );
 
     return success( response );

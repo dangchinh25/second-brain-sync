@@ -5,6 +5,7 @@ import {
     , createCommitOnBranch
     , createPullRequest
     , getRepo
+    , mergePullRequest
 } from './lib/octokit';
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
@@ -154,6 +155,21 @@ const test = async () => {
         , toBranchName: 'main'
         , repositoryId: repoResponse.value.repository.id
     } );
+
+    console.log( createPullRequestResponse.value );
+
+    if ( createPullRequestResponse.isError() ) {
+        return;
+    }
+
+    const mergeRequestResponse = await mergePullRequest(
+        {
+            pullRequestId:
+                createPullRequestResponse.value.createPullRequest.pullRequest.id
+        }
+    );
+
+    console.log( mergeRequestResponse.value );
 };
 
 test();

@@ -79,5 +79,18 @@ export interface CreatePullRequestParams {
 export interface CreatePullRequestResponse {
     createPullRequest: {
         clientMutationId: string | null;
+        pullRequest: {
+            id: string;
+        };
+    };
+}
+
+export interface MergePullRequestParams {
+    pullRequestId: string;
+}
+
+export interface MergePullRequestResponse {
+    mergePullRequest: {
+        clientMutationId: string | null;
     };
 }
