@@ -3,6 +3,10 @@ import path from 'path';
 import {
     createBranch, createCommitOnBranch, getRepo
 } from './lib/octokit';
+import {
+    Either, error, success
+} from './types';
+import { readFile } from 'fs/promises';
 
 const convertToURLStyleString = ( str: string ): string => {
     const lowerCaseStr = str.toLowerCase();
@@ -69,6 +73,12 @@ const filesInFolder = getAllFiles( folderPath, folderName );
  * Commit?
  */
 
+const parseFileAsString = async ( filePath: string ): Promise<Either<Error, string>> => {
+    const result = await readFile( filePath, 'utf8' );
+
+    return success( result );
+};
+
 const test = async () => {
     const repoResponse = await getRepo( {
         owner: 'dangchinh25'
@@ -102,12 +112,31 @@ const test = async () => {
         return;
     }
 
+    const parseIntroFileAsStringResult = await parseFileAsString( 'assets/intro.md' );
+
+    console.log( parseIntroFileAsStringResult.value );
+
+    if ( parseIntroFileAsStringResult.isError() ) {
+        return;
+    }
+
     const createCommitAddDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name
         , repoName: 'second-brain'
         , ownerName: 'dangchinh25'
         , expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid
-        , fileChanges: { additions: [ { path: 'docs/test.txt', contents: btoa( 'new content here\n' ) } ] }
+        , fileChanges: {
+            additions: [
+                {
+                    path: 'docs/test.txt'
+                    , contents: btoa( 'new content here\n' )
+                }
+                , {
+                    path: 'docs/intro.md'
+                    , contents: btoa( parseIntroFileAsStringResult.value )
+                }
+            ]
+        }
         , commitMessage: { headline: 'Add docs file' }
     } );
 
