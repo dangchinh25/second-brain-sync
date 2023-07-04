@@ -31,15 +31,36 @@ export interface CreateBranchResponse {
     };
 }
 
+export interface FileChangesAdditions {
+    path: string;
+    contents: string;
+}
+
+export interface FileChangesDeletions {
+    path: string;
+}
+
+export interface FileChanges {
+    additions?: FileChangesAdditions[];
+    deletions?: FileChangesDeletions[];
+}
+
+export interface CommitMessage {
+    headline: string;
+    body?: string;
+}
+
 export interface CreateCommitOnBranchParams {
     branchName: string;
     repoName: string;
     ownerName: string;
     expectedHeadOid: string;
+    fileChanges: FileChanges;
+    commitMessage: CommitMessage;
 }
 
 export interface CreateCommitOnBranchResponse {
-    createCommitOnBrach: {
+    createCommitOnBranch: {
         clientMutationId: string | null;
         commit: {
             url: string;

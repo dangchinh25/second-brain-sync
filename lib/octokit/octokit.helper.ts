@@ -2,7 +2,11 @@ import { Either, success } from '../../types';
 import { octokitClient } from './octokit.client';
 import {
     CreateBranchParams
-    , CreateBranchResponse, CreateCommitOnBranchParams, CreateCommitOnBranchResponse, GetRepoParams, GetRepoResponse
+    , CreateBranchResponse
+    , CreateCommitOnBranchParams
+    , CreateCommitOnBranchResponse
+    , GetRepoParams
+    , GetRepoResponse
 } from './octokit.types';
 
 export const getRepo = async (
@@ -87,18 +91,10 @@ export const createCommitOnBranch = async (
                 , branchName: params.branchName
             }
             , expectedHeadOid: params.expectedHeadOid
-            , fileChanges: {
-                additions: [
-                    {
-                        path: 'docs/test.txt'
-                        , contents: btoa( 'new content here\n' )
-                    }
-                ]
-                , deletions: [ { path: 'docs' } ]
-            }
+            , fileChanges: params.fileChanges
             , message: {
-                headline: 'Test commit headline'
-                , body: 'Test commit'
+                headline: params.commitMessage.headline
+                , body: params.commitMessage.body || params.commitMessage.headline
             }
         }
     } );

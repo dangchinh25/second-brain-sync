@@ -89,14 +89,29 @@ const test = async () => {
         return;
     }
 
-    const commitResponse = await createCommitOnBranch( {
+    const createCommitDeletionDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name
         , repoName: 'second-brain'
         , ownerName: 'dangchinh25'
         , expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid
+        , fileChanges: { deletions: [ { path: 'docs' } ] }
+        , commitMessage: { headline: 'Remove docs folder' }
     } );
 
-    console.log( commitResponse.value );
+    if ( createCommitDeletionDocsResponse.isError() ) {
+        return;
+    }
+
+    const createCommitAddDocsResponse = await createCommitOnBranch( {
+        branchName: newBranchResponse.value.createRef.ref.name
+        , repoName: 'second-brain'
+        , ownerName: 'dangchinh25'
+        , expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid
+        , fileChanges: { additions: [ { path: 'docs/test.txt', contents: btoa( 'new content here\n' ) } ] }
+        , commitMessage: { headline: 'Add docs file' }
+    } );
+
+    console.log( createCommitAddDocsResponse.value );
 };
 
 test();
