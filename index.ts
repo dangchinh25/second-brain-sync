@@ -6,7 +6,7 @@ import {
     , createPullRequest
     , getRepo
 } from './lib/octokit';
-import { convertToURLStyleString, getFileAsString } from './utils';
+import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
 
 interface FileNameWithPath {
@@ -46,8 +46,6 @@ const getAllFiles = (
                         directoryName = entryFilename;
                     }
 
-                    directoryName = convertToURLStyleString( directoryName );
-
                     if ( !( directoryName in directoriesFileNamesWithPath ) ) {
                         directoriesFileNamesWithPath[ directoryName ] = [];
                     }
@@ -56,7 +54,7 @@ const getAllFiles = (
                     const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
 
                     directoriesFileNamesWithPath[ directoryName ].push( {
-                        fileName: convertToURLStyleString( entryFilename )
+                        fileName: entryFilename
                         , filePath: entryPath
                     } );
                 }
@@ -93,7 +91,7 @@ const test = async () => {
     }
 
     const newBranchResponse = await createBranch( {
-        branchName: 'test-branch-2'
+        branchName: `sync-${ new Date().getTime() }`
         , repositoryId: repoResponse.value.repository.id
         , oid: repoResponse.value.repository.defaultBranchRef.target.oid
     } );
