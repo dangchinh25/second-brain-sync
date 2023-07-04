@@ -3,18 +3,7 @@ import path from 'path';
 import {
     createBranch, createCommitOnBranch, getRepo
 } from './lib/octokit';
-import {
-    Either, error, success
-} from './types';
-import { readFile } from 'fs/promises';
-
-const convertToURLStyleString = ( str: string ): string => {
-    const lowerCaseStr = str.toLowerCase();
-    const strParts = lowerCaseStr.split( ' ' );
-
-    return strParts.join( '-' );
-};
-
+import { convertToURLStyleString, getFileAsString } from './utils';
 
 const getAllFiles = (
     folderPath: string
@@ -73,12 +62,6 @@ const filesInFolder = getAllFiles( folderPath, folderName );
  * Commit?
  */
 
-const parseFileAsString = async ( filePath: string ): Promise<Either<Error, string>> => {
-    const result = await readFile( filePath, 'utf8' );
-
-    return success( result );
-};
-
 const test = async () => {
     const repoResponse = await getRepo( {
         owner: 'dangchinh25'
@@ -112,13 +95,7 @@ const test = async () => {
         return;
     }
 
-    const parseIntroFileAsStringResult = await parseFileAsString( 'assets/intro.md' );
-
-    console.log( parseIntroFileAsStringResult.value );
-
-    if ( parseIntroFileAsStringResult.isError() ) {
-        return;
-    }
+    const introFileAsString = await getFileAsString( 'assets/intro.md' );
 
     const createCommitAddDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name
@@ -133,7 +110,7 @@ const test = async () => {
                 }
                 , {
                     path: 'docs/intro.md'
-                    , contents: btoa( parseIntroFileAsStringResult.value )
+                    , contents: btoa( introFileAsString )
                 }
             ]
         }
