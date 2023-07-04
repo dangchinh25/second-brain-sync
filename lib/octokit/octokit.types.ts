@@ -68,3 +68,16 @@ export interface CreateCommitOnBranchResponse {
         ref: Ref;
     };
 }
+
+export interface CreatePullRequestParams {
+    toBranchName: string;
+    fromBranchName: string;
+    repositoryId: string;
+    title: string;
+}
+
+export interface CreatePullRequestResponse {
+    createPullRequest: {
+        clientMutationId: string | null;
+    };
+}

@@ -5,7 +5,7 @@ import {
     , CreateBranchResponse
     , CreateCommitOnBranchParams
     , CreateCommitOnBranchResponse
-    , GetRepoParams
+    , CreatePullRequestParams, CreatePullRequestResponse, GetRepoParams
     , GetRepoResponse
 } from './octokit.types';
 
@@ -81,6 +81,7 @@ export const createCommitOnBranch = async (
                         target {
                             oid
                         }
+                        name
                     }
                 }
             }
@@ -96,6 +97,29 @@ export const createCommitOnBranch = async (
                 headline: params.commitMessage.headline
                 , body: params.commitMessage.body || params.commitMessage.headline
             }
+        }
+    } );
+
+    return success( response );
+};
+
+export const createPullRequest = async (
+    params: CreatePullRequestParams
+): Promise<Either<Error, CreatePullRequestResponse>> => {
+    const response: CreatePullRequestResponse = await octokitClient.graphql( {
+        query: `
+            mutation ($input: CreatePullRequestInput!) {
+                createPullRequest(input: $input) {
+                    clientMutationId
+                }
+            }
+        `
+        , input: {
+            baseRefName: params.toBranchName
+            , headRefName: params.fromBranchName
+            , headRepositoryId: params.repositoryId
+            , repositoryId: params.repositoryId
+            , title: params.title
         }
     } );
 

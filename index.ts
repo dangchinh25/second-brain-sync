@@ -3,6 +3,7 @@ import path from 'path';
 import {
     createBranch
     , createCommitOnBranch
+    , createPullRequest
     , getRepo
 } from './lib/octokit';
 import { convertToURLStyleString, getFileAsString } from './utils';
@@ -145,7 +146,16 @@ const test = async () => {
         , commitMessage: { headline: 'Add docs file' }
     } );
 
-    console.log( createCommitAddDocsResponse.value );
+    if ( createCommitAddDocsResponse.isError() ) {
+        return;
+    }
+
+    const createPullRequestResponse = await createPullRequest( {
+        title: `Sync at ${ new Date().toUTCString() }`
+        , fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name
+        , toBranchName: 'main'
+        , repositoryId: repoResponse.value.repository.id
+    } );
 };
 
 test();
