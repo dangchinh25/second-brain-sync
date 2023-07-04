@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import {
-    createBranch, createCommitOnBranch, getRepo
+    createBranch
+    , createCommitOnBranch
+    , getRepo
 } from './lib/octokit';
 import { convertToURLStyleString, getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
@@ -123,6 +125,17 @@ const test = async () => {
         ]
     };
 
+    for ( const [ directoryName, fileNamesWithPath ] of Object.entries( filesInFolder ) ) {
+        for ( const { fileName, filePath } of fileNamesWithPath ) {
+            const fileAsString = await getFileAsString( filePath );
+
+            fileChanges.additions?.push( {
+                path: `docs/${ directoryName }/${ fileName }`
+                , contents: Buffer.from( fileAsString ).toString( 'base64' )
+            } );
+        }
+    }
+
     const createCommitAddDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name
         , repoName: 'second-brain'
@@ -134,3 +147,5 @@ const test = async () => {
 
     console.log( createCommitAddDocsResponse.value );
 };
+
+test();
