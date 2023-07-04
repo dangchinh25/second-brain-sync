@@ -2,7 +2,7 @@ import { Either, success } from '../../types';
 import { octokitClient } from './octokit.client';
 import {
     CreateBranchParams
-    , CreateBranchResponse, GetRepoParams, GetRepoResponse
+    , CreateBranchResponse, CreateCommitOnBranchParams, CreateCommitOnBranchResponse, GetRepoParams, GetRepoResponse
 } from './octokit.types';
 
 export const getRepo = async (
@@ -43,12 +43,64 @@ export const createBranch = async (
                     repositoryId: $repositoryId
                 }) {
                     clientMutationId
+                    ref {
+                        target {
+                            oid
+                        }
+                        name
+                    }
                 }
             }
         `
         , branchRef: branchRef
         , repositoryId: params.repositoryId
         , oid: params.oid
+    } );
+
+    return success( response );
+};
+
+export const createCommitOnBranch = async (
+    params: CreateCommitOnBranchParams
+): Promise<Either<Error, CreateCommitOnBranchResponse>> => {
+    const repositoryNameWithOwner = `${ params.ownerName }/${ params.repoName }`;
+
+    const response: CreateCommitOnBranchResponse = await octokitClient.graphql( {
+        query: `
+            mutation ($input: CreateCommitOnBranchInput!) {
+                createCommitOnBranch(input: $input) {
+                    clientMutationId
+                    commit {
+                        url
+                    }
+                    ref {
+                        target {
+                            oid
+                        }
+                    }
+                }
+            }
+        `
+        , input: {
+            branch: {
+                repositoryNameWithOwner: repositoryNameWithOwner
+                , branchName: params.branchName
+            }
+            , expectedHeadOid: params.expectedHeadOid
+            , fileChanges: {
+                additions: [
+                    {
+                        path: 'docs/test.txt'
+                        , contents: btoa( 'new content here\n' )
+                    }
+                ]
+                , deletions: [ { path: 'docs' } ]
+            }
+            , message: {
+                headline: 'Test commit headline'
+                , body: 'Test commit'
+            }
+        }
     } );
 
     return success( response );

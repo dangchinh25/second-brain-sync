@@ -1,5 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import {
+    createBranch, createCommitOnBranch, getRepo
+} from './lib/octokit';
 
 const convertToURLStyleString = ( str: string ): string => {
     const lowerCaseStr = str.toLowerCase();
@@ -65,3 +68,35 @@ const filesInFolder = getAllFiles( folderPath, folderName );
  * Call create branch to create a new branch that is up to date with the default branch
  * Commit?
  */
+
+const test = async () => {
+    const repoResponse = await getRepo( {
+        owner: 'dangchinh25'
+        , repoName: 'second-brain'
+    } );
+
+    if ( repoResponse.isError() ) {
+        return;
+    }
+
+    const newBranchResponse = await createBranch( {
+        branchName: 'test-branch-2'
+        , repositoryId: repoResponse.value.repository.id
+        , oid: repoResponse.value.repository.defaultBranchRef.target.oid
+    } );
+
+    if ( newBranchResponse.isError() ) {
+        return;
+    }
+
+    const commitResponse = await createCommitOnBranch( {
+        branchName: newBranchResponse.value.createRef.ref.name
+        , repoName: 'second-brain'
+        , ownerName: 'dangchinh25'
+        , expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid
+    } );
+
+    console.log( commitResponse.value );
+};
+
+test();
