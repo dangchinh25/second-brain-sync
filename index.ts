@@ -4,12 +4,22 @@ import {
     createBranch, createCommitOnBranch, getRepo
 } from './lib/octokit';
 import { convertToURLStyleString, getFileAsString } from './utils';
+import { FileChanges } from './lib/octokit';
+
+interface FileNameWithPath {
+    fileName: string;
+    filePath: string;
+}
+
+interface DirectoriesFileNamesWithPath {
+    [key: string]: FileNameWithPath[];
+}
 
 const getAllFiles = (
     folderPath: string
     , folderName: string
-): Map<string, string[]> => {
-    const directoriesFilesMap: Map<string, string[]> = new Map();
+): DirectoriesFileNamesWithPath => {
+    const directoriesFileNamesWithPath: DirectoriesFileNamesWithPath = {};
 
     const traverseDirectory = ( directory: string ) => {
         const entries = fs.readdirSync( directory, { withFileTypes: true } );
@@ -35,11 +45,17 @@ const getAllFiles = (
 
                     directoryName = convertToURLStyleString( directoryName );
 
-                    if ( !directoriesFilesMap.has( directoryName ) ) {
-                        directoriesFilesMap.set( directoryName, [] );
+                    if ( !( directoryName in directoriesFileNamesWithPath ) ) {
+                        directoriesFileNamesWithPath[ directoryName ] = [];
                     }
 
-                    directoriesFilesMap.get( directoryName )?.push( entryPath );
+                    const entryPathParts = entryPath.split( '/' );
+                    const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
+
+                    directoriesFileNamesWithPath[ directoryName ].push( {
+                        fileName: convertToURLStyleString( entryFilename )
+                        , filePath: entryPath
+                    } );
                 }
             } else if ( entry.isDirectory() ) {
                 traverseDirectory( entryPath );
@@ -48,7 +64,8 @@ const getAllFiles = (
     };
 
     traverseDirectory( folderPath );
-    return directoriesFilesMap;
+
+    return directoriesFileNamesWithPath;
 };
 
 const folderName = 'SecondBrain';
@@ -97,27 +114,23 @@ const test = async () => {
 
     const introFileAsString = await getFileAsString( 'assets/intro.md' );
 
+    const fileChanges: FileChanges = {
+        additions: [
+            {
+                path: 'docs/intro.md'
+                , contents: btoa( introFileAsString )
+            }
+        ]
+    };
+
     const createCommitAddDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name
         , repoName: 'second-brain'
         , ownerName: 'dangchinh25'
         , expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid
-        , fileChanges: {
-            additions: [
-                {
-                    path: 'docs/test.txt'
-                    , contents: btoa( 'new content here\n' )
-                }
-                , {
-                    path: 'docs/intro.md'
-                    , contents: btoa( introFileAsString )
-                }
-            ]
-        }
+        , fileChanges: fileChanges
         , commitMessage: { headline: 'Add docs file' }
     } );
 
     console.log( createCommitAddDocsResponse.value );
 };
-
-test();
