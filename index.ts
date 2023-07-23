@@ -6,8 +6,8 @@ import {
 } from 'google-auth-library';
 import open from 'open';
 import { app } from './server';
-import { google } from 'googleapis';
 import { env } from './config';
+import { getFiles as getGooleDriveFiles } from './lib/googleService';
 
 const main = async () => {
     const server = app.listen( env.PORT, () => {
@@ -28,7 +28,7 @@ const main = async () => {
         scope: env.SCOPE
     } );
 
-    open( authorizeUrl, { wait: false } ).then( cp => cp.unref() );
+    open( authorizeUrl, { wait: false } );
 
     while ( !fs.existsSync( env.TOKEN_CODE_PATH ) ) {
         console.log( 'TokenCode has not been set. Try again in 2 second.' );
@@ -36,25 +36,25 @@ const main = async () => {
         await new Promise( resolve => setTimeout( resolve, 2000 ) );
     }
 
+    server.close();
+
     const tokenCodePayload = JSON.parse( fs.readFileSync( env.TOKEN_CODE_PATH ).toString() );
 
     const getTokenResponse = await oAuth2Client.getToken( tokenCodePayload.tokenCode );
 
     oAuth2Client.setCredentials( getTokenResponse.tokens );
 
-    const drive = google.drive( { version: 'v3', auth: oAuth2Client } );
-    const res = await drive.files.list();
-
-    const files = res.data.files;
+    const files = await getGooleDriveFiles(
+        oAuth2Client,
+        '1-3aaA4VD1JYIautQwAwhSVSlmyoCeDcP'
+    );
 
     console.log( 'Files:' );
     files?.map( ( file ) => {
-        console.log( `${ file.name } (${ file.id })` );
+        console.log( file );
     } );
+
+    fs.unlinkSync( env.TOKEN_CODE_PATH );
 };
 
 main();
-
-process.on( 'SIGINT', () => {
-    fs.unlinkSync( env.TOKEN_CODE_PATH );
-} );
