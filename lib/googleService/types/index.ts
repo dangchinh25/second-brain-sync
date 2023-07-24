@@ -4,9 +4,13 @@ export enum MimeType {
 }
 
 
-export interface File {
+export interface GenericFile {
     id: string;
     mimeType: MimeType;
     name: string;
     parents: string[];
+}
+
+export interface Folder extends GenericFile {
+    mimeType: MimeType.FOLDER;
 }

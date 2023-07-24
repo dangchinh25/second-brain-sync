@@ -7,7 +7,10 @@ import {
 import open from 'open';
 import { app } from './server';
 import { env } from './config';
-import { getFiles as getGooleDriveFiles } from './lib/googleService';
+import {
+    getFiles as getGooleDriveFiles,
+    getFolder as getGoogleDriveFolder
+} from './lib/googleService';
 
 const main = async () => {
     const server = app.listen( env.PORT, () => {
@@ -46,15 +49,19 @@ const main = async () => {
 
     const files = await getGooleDriveFiles(
         oAuth2Client,
-        '1-3aaA4VD1JYIautQwAwhSVSlmyoCeDcP'
+        env.ROOT_FOLDER_ID
     );
 
-    console.log( 'Files:' );
-    files?.map( ( file ) => {
-        console.log( file );
-    } );
+    const folder = await getGoogleDriveFolder( oAuth2Client, env.ROOT_FOLDER_ID );
 
-    fs.unlinkSync( env.TOKEN_CODE_PATH );
+    /*
+     * console.log( 'Files:' );
+     * files?.map( ( file ) => {
+     *     console.log( file );
+     * } );
+     */
+
+    console.log( folder );
 };
 
-main();
+main().then( () => fs.unlinkSync( env.TOKEN_CODE_PATH ) );
