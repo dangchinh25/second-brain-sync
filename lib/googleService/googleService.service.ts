@@ -1,12 +1,11 @@
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import {
-    Folder,
     GenericFile,
     MimeType
 } from './types';
 
-export const getFiles = async (
+export const getFilesUnderFolder = async (
     oAuth2Client: OAuth2Client,
     folderId: string
 ): Promise<GenericFile[]> => {
@@ -23,17 +22,17 @@ export const getFiles = async (
     return files;
 };
 
-export const getFolder = async (
+export const getFileInfo = async (
     oAuth2Client: OAuth2Client,
-    folderId: string
-): Promise<Folder> => {
+    fileId: string
+): Promise<GenericFile> => {
     const driveService = google.drive( { version: 'v3', auth: oAuth2Client } );
-    const getFolderResult = await driveService.files.get( {
-        fileId: folderId,
+    const getFileResult = await driveService.files.get( {
+        fileId: fileId,
         fields: 'id, name, mimeType, createdTime, parents'
     } );
 
-    const folder = getFolderResult.data as Folder;
+    const file = getFileResult.data as GenericFile;
 
-    return folder;
+    return file;
 };

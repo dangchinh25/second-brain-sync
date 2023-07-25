@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import {
-    createBranch
-    , createCommitOnBranch
-    , createPullRequest
-    , getRepo
-    , mergePullRequest
+    createBranch,
+    createCommitOnBranch,
+    createPullRequest,
+    getRepo,
+    mergePullRequest
 } from './lib/octokit';
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
@@ -20,8 +20,8 @@ interface DirectoriesFileNamesWithPath {
 }
 
 const getAllFiles = (
-    folderPath: string
-    , folderName: string
+    folderPath: string,
+    folderName: string
 ): DirectoriesFileNamesWithPath => {
     const directoriesFileNamesWithPath: DirectoriesFileNamesWithPath = {};
 
@@ -55,8 +55,8 @@ const getAllFiles = (
                     const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
 
                     directoriesFileNamesWithPath[ directoryName ].push( {
-                        fileName: entryFilename
-                        , filePath: entryPath
+                        fileName: entryFilename,
+                        filePath: entryPath
                     } );
                 }
             } else if ( entry.isDirectory() ) {
@@ -83,8 +83,8 @@ const filesInFolder = getAllFiles( folderPath, folderName );
 
 const test = async () => {
     const repoResponse = await getRepo( {
-        owner: 'dangchinh25'
-        , repoName: 'second-brain'
+        owner: 'dangchinh25',
+        repoName: 'second-brain'
     } );
 
     if ( repoResponse.isError() ) {
@@ -92,9 +92,9 @@ const test = async () => {
     }
 
     const newBranchResponse = await createBranch( {
-        branchName: `sync-${ new Date().getTime() }`
-        , repositoryId: repoResponse.value.repository.id
-        , oid: repoResponse.value.repository.defaultBranchRef.target.oid
+        branchName: `sync-${ new Date().getTime() }`,
+        repositoryId: repoResponse.value.repository.id,
+        oid: repoResponse.value.repository.defaultBranchRef.target.oid
     } );
 
     if ( newBranchResponse.isError() ) {
@@ -102,12 +102,12 @@ const test = async () => {
     }
 
     const createCommitDeletionDocsResponse = await createCommitOnBranch( {
-        branchName: newBranchResponse.value.createRef.ref.name
-        , repoName: 'second-brain'
-        , ownerName: 'dangchinh25'
-        , expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid
-        , fileChanges: { deletions: [ { path: 'docs' } ] }
-        , commitMessage: { headline: 'Remove docs folder' }
+        branchName: newBranchResponse.value.createRef.ref.name,
+        repoName: 'second-brain',
+        ownerName: 'dangchinh25',
+        expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid,
+        fileChanges: { deletions: [ { path: 'docs' } ], additions: [] },
+        commitMessage: { headline: 'Remove docs folder' }
     } );
 
     if ( createCommitDeletionDocsResponse.isError() ) {
@@ -119,10 +119,11 @@ const test = async () => {
     const fileChanges: FileChanges = {
         additions: [
             {
-                path: 'docs/intro.md'
-                , contents: btoa( introFileAsString )
+                path: 'docs/intro.md',
+                contents: btoa( introFileAsString )
             }
-        ]
+        ],
+        deletions: []
     };
 
     for ( const [ directoryName, fileNamesWithPath ] of Object.entries( filesInFolder ) ) {
@@ -130,19 +131,19 @@ const test = async () => {
             const fileAsString = await getFileAsString( filePath );
 
             fileChanges.additions?.push( {
-                path: `docs/${ directoryName }/${ fileName }`
-                , contents: Buffer.from( fileAsString ).toString( 'base64' )
+                path: `docs/${ directoryName }/${ fileName }`,
+                contents: Buffer.from( fileAsString ).toString( 'base64' )
             } );
         }
     }
 
     const createCommitAddDocsResponse = await createCommitOnBranch( {
-        branchName: newBranchResponse.value.createRef.ref.name
-        , repoName: 'second-brain'
-        , ownerName: 'dangchinh25'
-        , expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid
-        , fileChanges: fileChanges
-        , commitMessage: { headline: 'Add docs file' }
+        branchName: newBranchResponse.value.createRef.ref.name,
+        repoName: 'second-brain',
+        ownerName: 'dangchinh25',
+        expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid,
+        fileChanges: fileChanges,
+        commitMessage: { headline: 'Add docs file' }
     } );
 
     if ( createCommitAddDocsResponse.isError() ) {
@@ -150,10 +151,10 @@ const test = async () => {
     }
 
     const createPullRequestResponse = await createPullRequest( {
-        title: `Sync at ${ new Date().toUTCString() }`
-        , fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name
-        , toBranchName: 'main'
-        , repositoryId: repoResponse.value.repository.id
+        title: `Sync at ${ new Date().toUTCString() }`,
+        fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name,
+        toBranchName: 'main',
+        repositoryId: repoResponse.value.repository.id
     } );
 
     console.log( createPullRequestResponse.value );

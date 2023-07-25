@@ -8,9 +8,14 @@ import open from 'open';
 import { app } from './server';
 import { env } from './config';
 import {
-    getFiles as getGooleDriveFiles,
-    getFolder as getGoogleDriveFolder
+    getFilesUnderFolder as getGooleDriveFilesUnderFolder,
+    getFileInfo as getGoogleDriveFileInfo,
+    Folder as GoogleDriveFolder,
+    MimeType as GoogleMimeType,
+    GenericFile as GoogleGenericFile
 } from './lib/googleService';
+import { getFileAsString } from './utils';
+import { FileChanges } from './lib/octokit';
 
 const main = async () => {
     const server = app.listen( env.PORT, () => {
@@ -47,21 +52,91 @@ const main = async () => {
 
     oAuth2Client.setCredentials( getTokenResponse.tokens );
 
-    const files = await getGooleDriveFiles(
-        oAuth2Client,
-        env.ROOT_FOLDER_ID
-    );
+    const introFileAsString = await getFileAsString( 'assets/intro.md' );
 
-    const folder = await getGoogleDriveFolder( oAuth2Client, env.ROOT_FOLDER_ID );
+    const fileChanges: FileChanges = {
+        additions: [
+            {
+                path: 'docs/intro.md',
+                contents: btoa( introFileAsString )
+            }
+        ],
+        deletions: []
+    };
 
-    /*
-     * console.log( 'Files:' );
-     * files?.map( ( file ) => {
-     *     console.log( file );
-     * } );
-     */
+    const getNestedFileChangesResult = await getNestedFileChanges( oAuth2Client, env.ROOT_FOLDER_ID );
 
-    console.log( folder );
+    fileChanges.additions.push( ...getNestedFileChangesResult.additions );
+    fileChanges.deletions.push( ...getNestedFileChangesResult.deletions );
+
+    console.log( fileChanges );
 };
 
-main().then( () => fs.unlinkSync( env.TOKEN_CODE_PATH ) );
+main().finally( () => fs.unlinkSync( env.TOKEN_CODE_PATH ) );
+
+const getNestedFileChanges = async (
+    oAuth2Client: OAuth2Client,
+    rootFolderId: GoogleDriveFolder['id']
+): Promise<FileChanges>  => {
+    const fileChanges: FileChanges = {
+        additions: [],
+        deletions: []
+    };
+
+    const folderIdFolderMap: Map<GoogleDriveFolder['id'], GoogleDriveFolder> = new Map();
+    const fileIdParentMap: Map<GoogleGenericFile['id'], GoogleDriveFolder> = new Map();
+
+    const getRootGoogleDriveFolder = await getGoogleDriveFileInfo( oAuth2Client, rootFolderId ) as GoogleDriveFolder;
+    const rootFolderName = getRootGoogleDriveFolder.name;
+    folderIdFolderMap.set( rootFolderId, getRootGoogleDriveFolder );
+
+    const getRootGoogleDriveFilesResult = await getGooleDriveFilesUnderFolder( oAuth2Client, rootFolderId );
+    const googleDriveFilesQueue = getRootGoogleDriveFilesResult;
+
+    while ( googleDriveFilesQueue.length ) {
+        const googleDriveFile = googleDriveFilesQueue.shift();
+
+        if ( !googleDriveFile ) {
+            break;
+        }
+
+        if ( googleDriveFile.mimeType === GoogleMimeType.FOLDER ) {
+            folderIdFolderMap.set( googleDriveFile.id, googleDriveFile as GoogleDriveFolder );
+            const getGoogleDriveFilesResult = await getGooleDriveFilesUnderFolder( oAuth2Client, googleDriveFile.id );
+
+            for ( const file of getGoogleDriveFilesResult ) {
+                fileIdParentMap.set( file.id, googleDriveFile as GoogleDriveFolder );
+            }
+
+            googleDriveFilesQueue.push( ...getGoogleDriveFilesResult );
+        } else {
+            let parentFolder = fileIdParentMap.get( googleDriveFile.id );
+
+            if ( !parentFolder ) {
+                continue;
+            }
+
+            let path = `/${ parentFolder.name }/${ googleDriveFile.name }`;
+
+            while ( parentFolder.name !== rootFolderName ) {
+                path = `/${ parentFolder.name }` + path;
+                const [ grandParentId ] = parentFolder.parents;
+
+                const grandParentFolder = folderIdFolderMap.get( grandParentId );
+
+                if ( !grandParentFolder ) {
+                    continue;
+                }
+
+                parentFolder = grandParentFolder;
+            }
+
+            fileChanges.additions.push( {
+                path: 'docs' + path,
+                contents: Buffer.from( '' ).toString( 'base64' )
+            } );
+        }
+    }
+
+    return fileChanges;
+};

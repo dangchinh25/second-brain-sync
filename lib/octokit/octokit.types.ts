@@ -41,8 +41,8 @@ export interface FileChangesDeletions {
 }
 
 export interface FileChanges {
-    additions?: FileChangesAdditions[];
-    deletions?: FileChangesDeletions[];
+    additions: FileChangesAdditions[];
+    deletions: FileChangesDeletions[];
 }
 
 export interface CommitMessage {
