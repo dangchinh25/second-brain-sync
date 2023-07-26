@@ -36,3 +36,20 @@ export const getFileInfo = async (
 
     return file;
 };
+
+export const getFileContent = async (
+    oAuth2Client: OAuth2Client,
+    fileId: string
+): Promise<string> => {
+    const driveService = google.drive( { version: 'v3', auth: oAuth2Client } );
+    const getFileContentResult = await driveService.files.get(
+        {
+            fileId: fileId,
+            alt: 'media'
+        }
+    );
+
+    const fileContent = getFileContentResult.data as string;
+
+    return fileContent;
+};

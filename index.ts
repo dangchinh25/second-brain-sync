@@ -12,64 +12,68 @@ import {
     getFileInfo as getGoogleDriveFileInfo,
     Folder as GoogleDriveFolder,
     MimeType as GoogleMimeType,
-    GenericFile as GoogleGenericFile
+    GenericFile as GoogleGenericFile,
+    getFileContent as getGoogleDriveFileContent
 } from './lib/googleService';
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
 
 const main = async () => {
-    const server = app.listen( env.PORT, () => {
-        console.log( `Server running on port ${ env.PORT }` );
-    } );
+    try {
+        const server = app.listen( env.PORT, () => {
+            console.log( `Server running on port ${ env.PORT }` );
+        } );
 
-    const oAuth2ClientOptions: OAuth2ClientOptions = {
-        clientId: env.CLIENT_ID,
-        clientSecret: env.CLIENT_SECRET,
-        redirectUri: env.REDIRECT_URI
-    };
+        const oAuth2ClientOptions: OAuth2ClientOptions = {
+            clientId: env.CLIENT_ID,
+            clientSecret: env.CLIENT_SECRET,
+            redirectUri: env.REDIRECT_URI
+        };
 
-    const oAuth2Client = new OAuth2Client( oAuth2ClientOptions );
+        const oAuth2Client = new OAuth2Client( oAuth2ClientOptions );
 
-    // Generate the url that will be used for the consent dialog.
-    const authorizeUrl = oAuth2Client.generateAuthUrl( {
-        [ 'access_type' ]: 'offline',
-        scope: env.SCOPE
-    } );
+        // Generate the url that will be used for the consent dialog.
+        const authorizeUrl = oAuth2Client.generateAuthUrl( {
+            [ 'access_type' ]: 'offline',
+            scope: env.SCOPE
+        } );
 
-    open( authorizeUrl, { wait: false } );
+        open( authorizeUrl, { wait: false } );
 
-    while ( !fs.existsSync( env.TOKEN_CODE_PATH ) ) {
-        console.log( 'TokenCode has not been set. Try again in 2 second.' );
+        while ( !fs.existsSync( env.TOKEN_CODE_PATH ) ) {
+            console.log( 'TokenCode has not been set. Try again in 2 second.' );
 
-        await new Promise( resolve => setTimeout( resolve, 2000 ) );
+            await new Promise( resolve => setTimeout( resolve, 2000 ) );
+        }
+
+        server.close();
+
+        const tokenCodePayload = JSON.parse( fs.readFileSync( env.TOKEN_CODE_PATH ).toString() );
+
+        const getTokenResponse = await oAuth2Client.getToken( tokenCodePayload.tokenCode );
+
+        oAuth2Client.setCredentials( getTokenResponse.tokens );
+
+        const introFileAsString = await getFileAsString( 'assets/intro.md' );
+
+        const fileChanges: FileChanges = {
+            additions: [
+                {
+                    path: 'docs/intro.md',
+                    contents: btoa( introFileAsString )
+                }
+            ],
+            deletions: []
+        };
+
+        const getNestedFileChangesResult = await getNestedFileChanges( oAuth2Client, env.ROOT_FOLDER_ID );
+
+        fileChanges.additions.push( ...getNestedFileChangesResult.additions );
+        fileChanges.deletions.push( ...getNestedFileChangesResult.deletions );
+
+        console.log( fileChanges );
+    } catch ( error ) {
     }
-
-    server.close();
-
-    const tokenCodePayload = JSON.parse( fs.readFileSync( env.TOKEN_CODE_PATH ).toString() );
-
-    const getTokenResponse = await oAuth2Client.getToken( tokenCodePayload.tokenCode );
-
-    oAuth2Client.setCredentials( getTokenResponse.tokens );
-
-    const introFileAsString = await getFileAsString( 'assets/intro.md' );
-
-    const fileChanges: FileChanges = {
-        additions: [
-            {
-                path: 'docs/intro.md',
-                contents: btoa( introFileAsString )
-            }
-        ],
-        deletions: []
-    };
-
-    const getNestedFileChangesResult = await getNestedFileChanges( oAuth2Client, env.ROOT_FOLDER_ID );
-
-    fileChanges.additions.push( ...getNestedFileChangesResult.additions );
-    fileChanges.deletions.push( ...getNestedFileChangesResult.deletions );
-
-    console.log( fileChanges );
 };
 
 main().finally( () => fs.unlinkSync( env.TOKEN_CODE_PATH ) );
@@ -131,9 +135,14 @@ const getNestedFileChanges = async (
                 parentFolder = grandParentFolder;
             }
 
+            const getFileContentResult = await getGoogleDriveFileContent(
+                oAuth2Client,
+                googleDriveFile.id
+            );
+
             fileChanges.additions.push( {
                 path: 'docs' + path,
-                contents: Buffer.from( '' ).toString( 'base64' )
+                contents: Buffer.from( getFileContentResult ).toString( 'base64' )
             } );
         }
     }
