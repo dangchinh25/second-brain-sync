@@ -16,7 +16,14 @@ import {
     getFileContent as getGoogleDriveFileContent
 } from './lib/googleService';
 import { getFileAsString } from './utils';
-import { FileChanges } from './lib/octokit';
+import {
+    FileChanges,
+    createBranch,
+    createCommitOnBranch,
+    createPullRequest,
+    getRepo,
+    mergePullRequest
+} from './lib/octokit';
 
 const main = async () => {
     try {
@@ -71,7 +78,72 @@ const main = async () => {
         fileChanges.additions.push( ...getNestedFileChangesResult.additions );
         fileChanges.deletions.push( ...getNestedFileChangesResult.deletions );
 
-        console.log( fileChanges );
+        const repoResponse = await getRepo( {
+            owner: 'dangchinh25',
+            repoName: 'second-brain'
+        } );
+
+        if ( repoResponse.isError() ) {
+            return;
+        }
+
+        const newBranchResponse = await createBranch( {
+            branchName: `sync-${ new Date().getTime() }`,
+            repositoryId: repoResponse.value.repository.id,
+            oid: repoResponse.value.repository.defaultBranchRef.target.oid
+        } );
+
+        if ( newBranchResponse.isError() ) {
+            return;
+        }
+
+        const createCommitDeletionDocsResponse = await createCommitOnBranch( {
+            branchName: newBranchResponse.value.createRef.ref.name,
+            repoName: 'second-brain',
+            ownerName: 'dangchinh25',
+            expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid,
+            fileChanges: { deletions: [ { path: 'docs' } ], additions: [] },
+            commitMessage: { headline: 'Remove docs folder' }
+        } );
+
+        if ( createCommitDeletionDocsResponse.isError() ) {
+            return;
+        }
+
+        const createCommitAddDocsResponse = await createCommitOnBranch( {
+            branchName: newBranchResponse.value.createRef.ref.name,
+            repoName: 'second-brain',
+            ownerName: 'dangchinh25',
+            expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid,
+            fileChanges: fileChanges,
+            commitMessage: { headline: 'Add docs file' }
+        } );
+
+        if ( createCommitAddDocsResponse.isError() ) {
+            return;
+        }
+
+        const createPullRequestResponse = await createPullRequest( {
+            title: `Sync at ${ new Date().toUTCString() }`,
+            fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name,
+            toBranchName: 'main',
+            repositoryId: repoResponse.value.repository.id
+        } );
+
+        console.log( createPullRequestResponse.value );
+
+        if ( createPullRequestResponse.isError() ) {
+            return;
+        }
+
+        const mergeRequestResponse = await mergePullRequest(
+            {
+                pullRequestId:
+                    createPullRequestResponse.value.createPullRequest.pullRequest.id
+            }
+        );
+
+        console.log( mergeRequestResponse.value );
     } catch ( error ) {
     }
 };
@@ -120,7 +192,7 @@ const getNestedFileChanges = async (
                 continue;
             }
 
-            let path = `/${ parentFolder.name }/${ googleDriveFile.name }`;
+            let path = `/${ googleDriveFile.name }`;
 
             while ( parentFolder.name !== rootFolderName ) {
                 path = `/${ parentFolder.name }` + path;
