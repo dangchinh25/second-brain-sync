@@ -15,5 +15,7 @@ export const env = cleanEnv( process.env, {
     REDIRECT_URI: str( { default: 'http://localhost:3000/oauth2callback' } ),
     TOKEN_CODE_PATH: str( { default: 'token-code.json' } ),
     SCOPE: str(),
-    ROOT_FOLDER_ID: str()
+    ROOT_FOLDER_ID: str(),
+    GITHUB_REPO_NAME: str(),
+    GITHUB_REPO_OWNER: str()
 } );

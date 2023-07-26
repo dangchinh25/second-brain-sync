@@ -1,14 +1,16 @@
 import { Either, success } from '../../types';
 import { octokitClient } from './octokit.client';
 import {
-    CreateBranchParams
-    , CreateBranchResponse
-    , CreateCommitOnBranchParams
-    , CreateCommitOnBranchResponse
-    , CreatePullRequestParams, CreatePullRequestResponse, GetRepoParams
-    , GetRepoResponse
-    , MergePullRequestParams
-    , MergePullRequestResponse
+    CreateBranchParams,
+    CreateBranchResponse,
+    CreateCommitOnBranchParams,
+    CreateCommitOnBranchResponse,
+    CreatePullRequestParams,
+    CreatePullRequestResponse,
+    GetRepoParams,
+    GetRepoResponse,
+    MergePullRequestParams,
+    MergePullRequestResponse
 } from './octokit.types';
 
 export const getRepo = async (
@@ -27,9 +29,9 @@ export const getRepo = async (
                     }
                 }
             }
-        `
-        , owner: params.owner
-        , repoName: params.repoName
+        `,
+        owner: params.owner,
+        repoName: params.repoName
     } );
 
     return success( response );
@@ -57,10 +59,10 @@ export const createBranch = async (
                     }
                 }
             }
-        `
-        , branchRef: branchRef
-        , repositoryId: params.repositoryId
-        , oid: params.oid
+        `,
+        branchRef: branchRef,
+        repositoryId: params.repositoryId,
+        oid: params.oid
     } );
 
     return success( response );
@@ -87,17 +89,17 @@ export const createCommitOnBranch = async (
                     }
                 }
             }
-        `
-        , input: {
+        `,
+        input: {
             branch: {
-                repositoryNameWithOwner: repositoryNameWithOwner
-                , branchName: params.branchName
-            }
-            , expectedHeadOid: params.expectedHeadOid
-            , fileChanges: params.fileChanges
-            , message: {
-                headline: params.commitMessage.headline
-                , body: params.commitMessage.body || params.commitMessage.headline
+                repositoryNameWithOwner: repositoryNameWithOwner,
+                branchName: params.branchName
+            },
+            expectedHeadOid: params.expectedHeadOid,
+            fileChanges: params.fileChanges,
+            message: {
+                headline: params.commitMessage.headline,
+                body: params.commitMessage.body || params.commitMessage.headline
             }
         }
     } );
@@ -118,13 +120,13 @@ export const createPullRequest = async (
                     }
                 }
             }
-        `
-        , input: {
-            baseRefName: params.toBranchName
-            , headRefName: params.fromBranchName
-            , headRepositoryId: params.repositoryId
-            , repositoryId: params.repositoryId
-            , title: params.title
+        `,
+        input: {
+            baseRefName: params.toBranchName,
+            headRefName: params.fromBranchName,
+            headRepositoryId: params.repositoryId,
+            repositoryId: params.repositoryId,
+            title: params.title
         }
     } );
 
@@ -141,8 +143,8 @@ export const mergePullRequest = async (
                     clientMutationId
                 }
             }
-        `
-        , input: { pullRequestId: params.pullRequestId }
+        `,
+        input: { pullRequestId: params.pullRequestId }
     } );
 
     return success( response );

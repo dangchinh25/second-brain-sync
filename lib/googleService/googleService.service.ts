@@ -4,11 +4,12 @@ import {
     GenericFile,
     MimeType
 } from './types';
+import { Either, success } from '../../types';
 
 export const getFilesUnderFolder = async (
     oAuth2Client: OAuth2Client,
     folderId: string
-): Promise<GenericFile[]> => {
+): Promise<Either<Error, GenericFile[]>> => {
     const driveService = google.drive( { version: 'v3', auth: oAuth2Client } );
     const getFilesResult = await driveService.files.list(
         {
@@ -19,28 +20,28 @@ export const getFilesUnderFolder = async (
 
     const files = getFilesResult.data.files as GenericFile[];
 
-    return files;
+    return success( files );
 };
 
-export const getFileInfo = async (
+export const getFileInfo = async<T extends GenericFile> (
     oAuth2Client: OAuth2Client,
     fileId: string
-): Promise<GenericFile> => {
+): Promise<Either<Error, T>> => {
     const driveService = google.drive( { version: 'v3', auth: oAuth2Client } );
     const getFileResult = await driveService.files.get( {
         fileId: fileId,
         fields: 'id, name, mimeType, createdTime, parents'
     } );
 
-    const file = getFileResult.data as GenericFile;
+    const file = getFileResult.data as T;
 
-    return file;
+    return success( file );
 };
 
 export const getFileContent = async (
     oAuth2Client: OAuth2Client,
     fileId: string
-): Promise<string> => {
+): Promise<Either<Error, string>> => {
     const driveService = google.drive( { version: 'v3', auth: oAuth2Client } );
     const getFileContentResult = await driveService.files.get(
         {
@@ -51,5 +52,5 @@ export const getFileContent = async (
 
     const fileContent = getFileContentResult.data as string;
 
-    return fileContent;
+    return success( fileContent );
 };
