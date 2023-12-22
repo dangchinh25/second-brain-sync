@@ -47,10 +47,6 @@
         "ignorePattern": "-"
       }
     ],
-    "multiline-comment-style": [
-      "error",
-      "starred-block"
-    ],
     "no-inline-comments": "error",
     "spaced-comment": [
       "error",
@@ -70,7 +66,7 @@
     ],
     "comma-style": [
       "error",
-      "first",
+      "last",
       {
         "exceptions": {
           "CallExpression": false,
