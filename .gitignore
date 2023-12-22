@@ -12,3 +12,4 @@ process.yml
 .env
 .env.original
 jest/coverage
+token-code.json
