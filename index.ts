@@ -1,11 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import {
-    createBranch
-    , createCommitOnBranch
-    , createPullRequest
-    , getRepo
-    , mergePullRequest
+    createBranch,
+    createCommitOnBranch,
+    createPullRequest,
+    getRepo,
+    mergePullRequest
 } from './lib/octokit';
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
@@ -20,8 +20,8 @@ interface DirectoriesFileNamesWithPath {
 }
 
 const getAllFiles = (
-    folderPath: string
-    , folderName: string
+    folderPath: string,
+    folderName: string
 ): DirectoriesFileNamesWithPath => {
     const directoriesFileNamesWithPath: DirectoriesFileNamesWithPath = {};
 
@@ -55,8 +55,8 @@ const getAllFiles = (
                     const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
 
                     directoriesFileNamesWithPath[ directoryName ].push( {
-                        fileName: entryFilename
-                        , filePath: entryPath
+                        fileName: entryFilename,
+                        filePath: entryPath
                     } );
                 }
             } else if ( entry.isDirectory() ) {
@@ -70,8 +70,8 @@ const getAllFiles = (
     return directoriesFileNamesWithPath;
 };
 
-const folderName = 'SecondBrain';
-const folderPath = `/Users/chinhle/Documents/Learning/${ folderName }`;
+const folderName = 'Chinh\'s Vault';
+const folderPath = `/Users/chinhle/Documents/${ folderName }`;
 const filesInFolder = getAllFiles( folderPath, folderName );
 
 /*
@@ -83,44 +83,51 @@ const filesInFolder = getAllFiles( folderPath, folderName );
 
 const test = async () => {
     const repoResponse = await getRepo( {
-        owner: 'dangchinh25'
-        , repoName: 'second-brain'
+        owner: 'dangchinh25',
+        repoName: 'second-brain'
     } );
 
     if ( repoResponse.isError() ) {
         return;
     }
 
+    console.log( 'Creating new branch...' );
+
     const newBranchResponse = await createBranch( {
-        branchName: `sync-${ new Date().getTime() }`
-        , repositoryId: repoResponse.value.repository.id
-        , oid: repoResponse.value.repository.defaultBranchRef.target.oid
+        branchName: `sync-${ new Date().getTime() }`,
+        repositoryId: repoResponse.value.repository.id,
+        oid: repoResponse.value.repository.defaultBranchRef.target.oid
     } );
 
     if ( newBranchResponse.isError() ) {
         return;
     }
 
+    console.log( 'New branch created!' );
+    console.log( 'Create commit on branch to remove current docs folder...' );
+
     const createCommitDeletionDocsResponse = await createCommitOnBranch( {
-        branchName: newBranchResponse.value.createRef.ref.name
-        , repoName: 'second-brain'
-        , ownerName: 'dangchinh25'
-        , expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid
-        , fileChanges: { deletions: [ { path: 'docs' } ] }
-        , commitMessage: { headline: 'Remove docs folder' }
+        branchName: newBranchResponse.value.createRef.ref.name,
+        repoName: 'second-brain',
+        ownerName: 'dangchinh25',
+        expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid,
+        fileChanges: { deletions: [ { path: 'docs' } ] },
+        commitMessage: { headline: 'Remove docs folder' }
     } );
 
     if ( createCommitDeletionDocsResponse.isError() ) {
         return;
     }
 
+    console.log( 'Changes commited!' );
+
     const introFileAsString = await getFileAsString( 'assets/intro.md' );
 
     const fileChanges: FileChanges = {
         additions: [
             {
-                path: 'docs/intro.md'
-                , contents: btoa( introFileAsString )
+                path: 'docs/intro.md',
+                contents: btoa( introFileAsString )
             }
         ]
     };
@@ -130,38 +137,44 @@ const test = async () => {
             const fileAsString = await getFileAsString( filePath );
 
             fileChanges.additions?.push( {
-                path: `docs/${ directoryName }/${ fileName }`
-                , contents: Buffer.from( fileAsString ).toString( 'base64' )
+                path: `docs/${ directoryName }/${ fileName }`,
+                contents: Buffer.from( fileAsString ).toString( 'base64' )
             } );
         }
     }
 
+    console.log( 'Create commit on branch to add new docs...' );
+
     const createCommitAddDocsResponse = await createCommitOnBranch( {
-        branchName: newBranchResponse.value.createRef.ref.name
-        , repoName: 'second-brain'
-        , ownerName: 'dangchinh25'
-        , expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid
-        , fileChanges: fileChanges
-        , commitMessage: { headline: 'Add docs file' }
+        branchName: newBranchResponse.value.createRef.ref.name,
+        repoName: 'second-brain',
+        ownerName: 'dangchinh25',
+        expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid,
+        fileChanges: fileChanges,
+        commitMessage: { headline: 'Add docs file' }
     } );
 
     if ( createCommitAddDocsResponse.isError() ) {
         return;
     }
 
+    console.log( 'Changes commited!' );
+    console.log( 'Creating pull request...' );
+
     const createPullRequestResponse = await createPullRequest( {
-        title: `Sync at ${ new Date().toUTCString() }`
-        , fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name
-        , toBranchName: 'main'
-        , repositoryId: repoResponse.value.repository.id
+        title: `Sync at ${ new Date().toUTCString() }`,
+        fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name,
+        toBranchName: 'main',
+        repositoryId: repoResponse.value.repository.id
     } );
 
-    console.log( createPullRequestResponse.value );
+    console.log( 'Pull requested created! ', createPullRequestResponse.value );
 
     if ( createPullRequestResponse.isError() ) {
         return;
     }
 
+    console.log( 'Auto approve and merge pull request...' );
     const mergeRequestResponse = await mergePullRequest(
         {
             pullRequestId:
@@ -169,7 +182,7 @@ const test = async () => {
         }
     );
 
-    console.log( mergeRequestResponse.value );
+    console.log( 'Pull request merged! ', mergeRequestResponse.value );
 };
 
 test();

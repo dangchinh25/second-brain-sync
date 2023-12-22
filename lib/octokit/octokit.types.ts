@@ -1,9 +1,9 @@
-export interface Ref {
+export type Ref = {
     target: {
         oid: string;
     };
     name: string;
-}
+};
 
 export interface GetRepoResponse {
     repository: {
@@ -24,12 +24,12 @@ export interface CreateBranchParams {
     oid: string;
 }
 
-export interface CreateBranchResponse {
+export type CreateBranchResponse = {
     createRef: {
         clientMutationId: string | null;
         ref: Ref;
     };
-}
+};
 
 export interface FileChangesAdditions {
     path: string;
