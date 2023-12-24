@@ -1,48 +1,36 @@
 ---
 sidebar_position: 1
 slug: /
+title: My Knowledge Wiki
 ---
 
-# Tutorial Intro
+# [My Knowledge Wiki](https://wiki.chinhle.me)
 
-Let's discover **Docusaurus in less than 5 minutes**.
+This is my personal wiki where I share everything I know on various topics, exploring the concept of **Second Brain** and **Digital Garden**. This site is built with `Docusaurus`  on [Github](https://github.com/dangchinh25/second-brain). 
 
-## Getting Started
+Below are all of my notes and their relations visualized.
+![](https://i.imgur.com/NhBKkad.png)
+![](https://i.imgur.com/Z3SgYBJ.png)
 
-Get started by **creating a new site**.
+This is definitely not a comprehensive list of ***everything that I know***, but my goal is to get this as close as possible.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+## Getting started
 
-### What you'll need
+This garden is quite literally my second brain with the way multiple pieces got connected and referenced to each other. It includes my thoughts, notes, and links on topics I care about. 
 
-- [Node.js](https://nodejs.org/en/download/) version 16.14 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+The content here are all markdown files, which can be [found here](https://github.com/dangchinh25/second-brain/tree/main/docs), which after every commit to the [GitHub repo](https://github.com/dangchinh25/second-brain) builds the website using [Docusaurus](tools/docusaurus.md) and publishes it to [wiki.chinhle.me](https://wiki.chinhle.me) from which you are likely reading this page.
 
-## Generate a new site
+I try to learn something and update this everyday, using [this workflow](#workflow). 
 
-Generate a new Docusaurus site using the **classic template**.
 
-The classic template will automatically be added to your project after you run the command:
+## Workflow
+I usually take note using [Obsidian](https://obsidian.md/), which works really well with the way I think about stuff because of its *backlink* feature. It also has quite an user base, which continuously build plugin to make the product even better. 
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+[Obsidian](https://obsidian.md/) saves a copy of my notes locally on my laptop, which then I build [a tool](https://github.com/dangchinh25/second-brain-sync) to automatically parse through the file structure and update [this repo](https://github.com/dangchinh25/second-brain), which then trigger the website to be updated.
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+For more technical folks, [this tool](https://github.com/dangchinh25/second-brain-sync) is just a *Typescript* script that parse through the file structure and then use *Github API* to create a new branch, commit changes into that branch, create a PR into the main branch, and automatically merge that branch. Everything happen with just 1 command `npm run dev`.
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+I'm working on to make this workflow more streamlined, easier to use, and more automated, but that's a story for the futre.
 
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+## Thank you!
+You can find more about me [here](https://chinhle.me).
