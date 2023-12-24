@@ -40,10 +40,10 @@ export interface FileChangesDeletions {
     path: string;
 }
 
-export interface FileChanges {
-    additions?: FileChangesAdditions[];
-    deletions?: FileChangesDeletions[];
-}
+export type FileChanges = {
+    additions: FileChangesAdditions[];
+    deletions: FileChangesDeletions[];
+};
 
 export interface CommitMessage {
     headline: string;
