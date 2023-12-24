@@ -3,83 +3,62 @@ import path from 'path';
 import { FileChanges } from './lib/octokit';
 import { getFileAsString } from './utils';
 
-type FileNameWithPath = {
-    fileName: string;
-    filePath: string;
-};
-
-type DirectoriesFileNamesWithPath = {
-    [key: string]: FileNameWithPath[];
-};
-
-export const getAllFiles = (
-    folderPath: string,
-    folderName: string
-): DirectoriesFileNamesWithPath => {
-    const directoriesFileNamesWithPath: DirectoriesFileNamesWithPath = {};
-
-    const traverseDirectory = ( directory: string ) => {
-        const entries = fs.readdirSync( directory, { withFileTypes: true } );
-
-        for ( const entry of entries ) {
-            const entryPath = path.join( directory, entry.name );
-
-            if ( entry.isFile() ) {
-                const [ , fileExtension ] = entry.name.split( '.' );
-
-                if ( fileExtension === 'md' ) {
-                    const directoryPath = path.dirname( entryPath );
-                    const directoryPathParts = directoryPath.split( '/' );
-                    let directoryName = directoryPathParts[ directoryPathParts.length - 1 ];
-
-                    if ( directoryName === folderName ) {
-                        const entryPathParts = entryPath.split( '/' );
-                        const [ entryFilename ]
-              = entryPathParts[ entryPathParts.length - 1 ].split( '.' );
-
-                        directoryName = entryFilename;
-                    }
-
-                    if ( !( directoryName in directoriesFileNamesWithPath ) ) {
-                        directoriesFileNamesWithPath[ directoryName ] = [];
-                    }
-
-                    const entryPathParts = entryPath.split( '/' );
-                    const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
-
-                    directoriesFileNamesWithPath[ directoryName ].push( {
-                        fileName: entryFilename,
-                        filePath: entryPath
-                    } );
-                }
-            } else if ( entry.isDirectory() ) {
-                traverseDirectory( entryPath );
-            }
-        }
-    };
-
-    traverseDirectory( folderPath );
-
-    return directoriesFileNamesWithPath;
+type Dirent = {
+    name: string;
+    type: 'Dir' | 'File';
+    path: string;
 };
 
 export const getNestedFileChanges = async (
-    folderPath: string,
-    folderName: string
+    rootPath: string,
+    rootName: string
 ): Promise<FileChanges> => {
     const fileChanges: FileChanges = {
         additions: [],
         deletions: []
     };
 
-    const filesInFolder = getAllFiles( folderPath, folderName );
+    const queue: Dirent[] = [];
 
-    for ( const [ directoryName, fileNamesWithPath ] of Object.entries( filesInFolder ) ) {
-        for ( const { fileName, filePath } of fileNamesWithPath ) {
-            const fileAsString = await getFileAsString( filePath );
+    const entries = fs.readdirSync( rootPath, { withFileTypes: true } );
+
+    for ( const entry of entries ) {
+        if ( !entry.name.startsWith( '.' ) ) {
+            queue.push( {
+                name: entry.name,
+                path: path.join( rootPath, entry.name ),
+                type: entry.isDirectory() ? 'Dir' : 'File'
+            } );
+        }
+    }
+
+    while ( queue.length ) {
+        const entry = queue.shift();
+
+        if ( !entry ) {
+            break;
+        }
+
+        if ( entry.type === 'Dir' ) {
+            const subEntries = fs.readdirSync( entry.path, { withFileTypes: true } );
+
+            for ( const subEntry of subEntries ) {
+                queue.push( {
+                    name: subEntry.name,
+                    path: path.join( entry.path, subEntry.name ),
+                    type: subEntry.isDirectory() ? 'Dir' : 'File'
+                } );
+            }
+        } else {
+            const entryPathParts = entry.path.split( '/' );
+            const rootFolderIndex = entryPathParts.findIndex( part => part === rootName );
+
+            const localPath = entryPathParts.slice( rootFolderIndex + 1 ).join( '/' );
+            const fileAsString = await getFileAsString( entry.path );
+
 
             fileChanges.additions?.push( {
-                path: `docs/${ directoryName }/${ fileName }`,
+                path: `docs/${ localPath }`,
                 contents: Buffer.from( fileAsString ).toString( 'base64' )
             } );
         }

@@ -16,7 +16,6 @@ import { getNestedFileChanges } from './helper';
  * Call create branch to create a new branch that is up to date with the default branch
  * Commit?
  */
-
 const main = async () => {
     const repoResponse = await getRepo( {
         owner: env.GITHUB_OWNER,
@@ -90,6 +89,7 @@ const main = async () => {
     }
 
     console.log( 'Changes commited!' );
+
     console.log( 'Creating pull request...' );
 
     const createPullRequestResponse = await createPullRequest( {
