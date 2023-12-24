@@ -9,6 +9,7 @@ import {
 } from './lib/octokit';
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
+import { env } from './config';
 
 interface FileNameWithPath {
     fileName: string;
@@ -70,8 +71,8 @@ const getAllFiles = (
     return directoriesFileNamesWithPath;
 };
 
-const folderName = 'Chinh\'s Vault';
-const folderPath = `/Users/chinhle/Documents/${ folderName }`;
+const folderName = env.VAULT_NAME;
+const folderPath = env.VAULT_PATH;
 const filesInFolder = getAllFiles( folderPath, folderName );
 
 /*
@@ -83,8 +84,8 @@ const filesInFolder = getAllFiles( folderPath, folderName );
 
 const test = async () => {
     const repoResponse = await getRepo( {
-        owner: 'dangchinh25',
-        repoName: 'second-brain'
+        owner: env.GITHUB_OWNER,
+        repoName: env.GITHUB_REPO_NAME
     } );
 
     if ( repoResponse.isError() ) {
@@ -108,8 +109,8 @@ const test = async () => {
 
     const createCommitDeletionDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name,
-        repoName: 'second-brain',
-        ownerName: 'dangchinh25',
+        repoName: env.GITHUB_REPO_NAME,
+        ownerName: env.GITHUB_OWNER,
         expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid,
         fileChanges: { deletions: [ { path: 'docs' } ] },
         commitMessage: { headline: 'Remove docs folder' }
@@ -147,8 +148,8 @@ const test = async () => {
 
     const createCommitAddDocsResponse = await createCommitOnBranch( {
         branchName: newBranchResponse.value.createRef.ref.name,
-        repoName: 'second-brain',
-        ownerName: 'dangchinh25',
+        repoName: env.GITHUB_REPO_NAME,
+        ownerName: env.GITHUB_OWNER,
         expectedHeadOid: createCommitDeletionDocsResponse.value.createCommitOnBranch.ref.target.oid,
         fileChanges: fileChanges,
         commitMessage: { headline: 'Add docs file' }

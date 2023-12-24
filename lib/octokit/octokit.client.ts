@@ -1,3 +1,4 @@
 import { Octokit } from 'octokit';
+import { env } from '../../config';
 
-export const octokitClient = new Octokit( { auth: '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' } );
+export const octokitClient = new Octokit( { auth: env.GITHUB_TOKEN } );
