@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import {
     createBranch,
     createCommitOnBranch,
@@ -10,70 +8,7 @@ import {
 import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
 import { env } from './config';
-
-interface FileNameWithPath {
-    fileName: string;
-    filePath: string;
-}
-
-interface DirectoriesFileNamesWithPath {
-    [key: string]: FileNameWithPath[];
-}
-
-const getAllFiles = (
-    folderPath: string,
-    folderName: string
-): DirectoriesFileNamesWithPath => {
-    const directoriesFileNamesWithPath: DirectoriesFileNamesWithPath = {};
-
-    const traverseDirectory = ( directory: string ) => {
-        const entries = fs.readdirSync( directory, { withFileTypes: true } );
-
-        for ( const entry of entries ) {
-            const entryPath = path.join( directory, entry.name );
-
-            if ( entry.isFile() ) {
-                const [ , fileExtension ] = entry.name.split( '.' );
-
-                if ( fileExtension === 'md' ) {
-                    const directoryPath = path.dirname( entryPath );
-                    const directoryPathParts = directoryPath.split( '/' );
-                    let directoryName = directoryPathParts[ directoryPathParts.length - 1 ];
-
-                    if ( directoryName === folderName ) {
-                        const entryPathParts = entryPath.split( '/' );
-                        const [ entryFilename ]
-              = entryPathParts[ entryPathParts.length - 1 ].split( '.' );
-
-                        directoryName = entryFilename;
-                    }
-
-                    if ( !( directoryName in directoriesFileNamesWithPath ) ) {
-                        directoriesFileNamesWithPath[ directoryName ] = [];
-                    }
-
-                    const entryPathParts = entryPath.split( '/' );
-                    const entryFilename = entryPathParts[ entryPathParts.length - 1 ];
-
-                    directoriesFileNamesWithPath[ directoryName ].push( {
-                        fileName: entryFilename,
-                        filePath: entryPath
-                    } );
-                }
-            } else if ( entry.isDirectory() ) {
-                traverseDirectory( entryPath );
-            }
-        }
-    };
-
-    traverseDirectory( folderPath );
-
-    return directoriesFileNamesWithPath;
-};
-
-const folderName = env.VAULT_NAME;
-const folderPath = env.VAULT_PATH;
-const filesInFolder = getAllFiles( folderPath, folderName );
+import { getNestedFileChanges } from './helper';
 
 /*
  * Call getRepo to get Repo Id
@@ -82,7 +17,7 @@ const filesInFolder = getAllFiles( folderPath, folderName );
  * Commit?
  */
 
-const test = async () => {
+const main = async () => {
     const repoResponse = await getRepo( {
         owner: env.GITHUB_OWNER,
         repoName: env.GITHUB_REPO_NAME
@@ -112,7 +47,7 @@ const test = async () => {
         repoName: env.GITHUB_REPO_NAME,
         ownerName: env.GITHUB_OWNER,
         expectedHeadOid: newBranchResponse.value.createRef.ref.target.oid,
-        fileChanges: { deletions: [ { path: 'docs' } ] },
+        fileChanges: { deletions: [ { path: 'docs' } ], additions: [] },
         commitMessage: { headline: 'Remove docs folder' }
     } );
 
@@ -130,19 +65,14 @@ const test = async () => {
                 path: 'docs/intro.md',
                 contents: btoa( introFileAsString )
             }
-        ]
+        ],
+        deletions: []
     };
 
-    for ( const [ directoryName, fileNamesWithPath ] of Object.entries( filesInFolder ) ) {
-        for ( const { fileName, filePath } of fileNamesWithPath ) {
-            const fileAsString = await getFileAsString( filePath );
+    const nestedFileChanges = await getNestedFileChanges( env.VAULT_PATH, env.VAULT_NAME );
 
-            fileChanges.additions?.push( {
-                path: `docs/${ directoryName }/${ fileName }`,
-                contents: Buffer.from( fileAsString ).toString( 'base64' )
-            } );
-        }
-    }
+    fileChanges.additions.push( ...nestedFileChanges.additions );
+    fileChanges.deletions.push( ...nestedFileChanges.deletions );
 
     console.log( 'Create commit on branch to add new docs...' );
 
@@ -186,4 +116,4 @@ const test = async () => {
     console.log( 'Pull request merged! ', mergeRequestResponse.value );
 };
 
-test();
+main();
