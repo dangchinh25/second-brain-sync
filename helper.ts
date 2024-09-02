@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FileChanges } from './lib/octokit';
 import { getFileAsString } from './utils';
+import { IGNORE_DIRECTORIES, IGNORE_FILES } from './config/constants';
 
 type Dirent = {
     name: string;
@@ -40,6 +41,10 @@ export const getNestedFileChanges = async (
         }
 
         if ( entry.type === 'Dir' ) {
+            if ( IGNORE_DIRECTORIES.includes( entry.name ) ) {
+                continue;
+            }
+
             const subEntries = fs.readdirSync( entry.path, { withFileTypes: true } );
 
             for ( const subEntry of subEntries ) {
@@ -50,6 +55,10 @@ export const getNestedFileChanges = async (
                 } );
             }
         } else {
+            if ( IGNORE_FILES.includes( entry.name ) ) {
+                continue;
+            }
+
             const entryPathParts = entry.path.split( '/' );
             const rootFolderIndex = entryPathParts.findIndex( part => part === rootName );
 

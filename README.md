@@ -5,5 +5,6 @@
 - Use environment variable
 - Create and build as Docker image
 - Decide to sync manually via running a script or cron job that runs once a day
-- Figure out if we can get a domain name and use it with Vercel
 - Update content of Intro.md 
+- Update CLI command to receive extra arguments for ease of testing
+- Update Eslint/prettier settings
