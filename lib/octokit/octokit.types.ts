@@ -69,11 +69,12 @@ export interface CreateCommitOnBranchResponse {
     };
 }
 
-export interface CreatePullRequestParams {
+export type CreatePullRequestParams = {
     toBranchName: string;
     fromBranchName: string;
     repositoryId: string;
     title: string;
+    description?: string;
 }
 
 export interface CreatePullRequestResponse {
