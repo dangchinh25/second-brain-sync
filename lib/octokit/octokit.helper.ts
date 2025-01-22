@@ -124,7 +124,8 @@ export const createPullRequest = async (
             headRefName: params.fromBranchName,
             headRepositoryId: params.repositoryId,
             repositoryId: params.repositoryId,
-            title: params.title
+            title: params.title,
+            body: params.description || ''
         }
     } );
 

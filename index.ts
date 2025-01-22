@@ -9,6 +9,7 @@ import { getFileAsString } from './utils';
 import { FileChanges } from './lib/octokit';
 import { env } from './config';
 import { getNestedFileChanges } from './helper';
+import { generatePRDescription } from './lib/openai';
 
 /*
  * Call getRepo to get Repo Id
@@ -90,13 +91,30 @@ const main = async () => {
 
     console.log( 'Changes commited!' );
 
+    console.log( 'Generating PR description...' );
+
+    const minimalFileChanges = {
+        additions: fileChanges.additions.map( ( { path } ) => ( { path } ) ),
+        deletions: fileChanges.deletions.map( ( { path } ) => ( { path } ) )
+    };
+
+    console.log( minimalFileChanges );
+
+    const generatePRDescriptionResponse = await generatePRDescription( minimalFileChanges );
+
+    if ( generatePRDescriptionResponse.isError() ) {
+        console.log( generatePRDescriptionResponse.value );
+        return;
+    }
+
     console.log( 'Creating pull request...' );
 
     const createPullRequestResponse = await createPullRequest( {
         title: `Sync at ${ new Date().toUTCString() }`,
         fromBranchName: createCommitAddDocsResponse.value.createCommitOnBranch.ref.name,
         toBranchName: 'main',
-        repositoryId: repoResponse.value.repository.id
+        repositoryId: repoResponse.value.repository.id,
+        description: generatePRDescriptionResponse.value.prDescription
     } );
 
     console.log( 'Pull requested created! ', createPullRequestResponse.value );
@@ -105,15 +123,15 @@ const main = async () => {
         return;
     }
 
-    console.log( 'Auto approve and merge pull request...' );
-    const mergeRequestResponse = await mergePullRequest(
-        {
-            pullRequestId:
-                createPullRequestResponse.value.createPullRequest.pullRequest.id
-        }
-    );
+    // console.log( 'Auto approve and merge pull request...' );
+    // const mergeRequestResponse = await mergePullRequest(
+    //     {
+    //         pullRequestId:
+    //             createPullRequestResponse.value.createPullRequest.pullRequest.id
+    //     }
+    // );
 
-    console.log( 'Pull request merged! ', mergeRequestResponse.value );
+    // console.log( 'Pull request merged! ', mergeRequestResponse.value );
 };
 
 main();

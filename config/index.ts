@@ -9,5 +9,6 @@ export const env = cleanEnv( process.env, {
     GITHUB_OWNER: str(),
     GITHUB_REPO_NAME: str(),
     VAULT_NAME: str(),
-    VAULT_PATH: str()
+    VAULT_PATH: str(),
+    OPENAI_API_KEY: str()
 } );
